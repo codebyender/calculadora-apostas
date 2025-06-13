@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -30,7 +29,6 @@
     <div class="mb-4">
       <p><strong>Rodadas certas:</strong> <span id="rodadas">0</span> / 30</p>
       <p><strong>Valor atual:</strong> R$ <span id="valorAtual">0,00</span></p>
-      <p><strong>Meta financeira:</strong> R$ <span id="metaValor">0,00</span></p>
     </div>
 
     <div class="mb-2">
@@ -39,11 +37,6 @@
         <div id="barraProgresso" class="h-4 bg-green-500 rounded" style="width: 0%"></div>
       </div>
     </div>
-
-    <div class="mt-6">
-      <h2 class="text-lg font-semibold mb-2">Odds ao vivo (1.45 ~ 1.55)</h2>
-      <div id="odds" class="text-sm space-y-2"></div>
-    </div>
   </div>
 
   <script>
@@ -51,37 +44,27 @@
     let valorAtual = 0;
     let odd = 1.5;
     let rodadas = 0;
-    let metaFinanceira = 0;
     const metaRodadas = 30;
 
     const elValorAtual = document.getElementById("valorAtual");
     const elRodadas = document.getElementById("rodadas");
-    const elMetaValor = document.getElementById("metaValor");
     const barra = document.getElementById("barraProgresso");
-
-    function calcularMeta() {
-      metaFinanceira = valorInicial * Math.pow(odd, 30);
-      elMetaValor.textContent = metaFinanceira.toFixed(2);
-    }
 
     function acertou() {
       if (rodadas === 0) {
         valorInicial = parseFloat(document.getElementById("valorInicial").value) || 0;
         odd = parseFloat(document.getElementById("oddFixa").value) || 1.5;
         valorAtual = valorInicial;
-        calcularMeta();
       }
       valorAtual *= odd;
       rodadas++;
       atualizarTela();
-      salvarEstado();
     }
 
     function errou() {
       rodadas = 0;
       valorAtual = 0;
       atualizarTela();
-      salvarEstado();
     }
 
     function resetar() {
@@ -90,7 +73,6 @@
       document.getElementById("valorInicial").value = "";
       document.getElementById("oddFixa").value = "";
       atualizarTela();
-      salvarEstado();
     }
 
     function atualizarTela() {
@@ -99,46 +81,6 @@
       const progresso = Math.min((rodadas / metaRodadas) * 100, 100);
       barra.style.width = progresso + "%";
     }
-
-    function salvarEstado() {
-      localStorage.setItem("estadoAposta", JSON.stringify({ valorAtual, rodadas, valorInicial, odd }));
-    }
-
-    function carregarEstado() {
-      const estado = JSON.parse(localStorage.getItem("estadoAposta"));
-      if (estado) {
-        valorAtual = estado.valorAtual;
-        rodadas = estado.rodadas;
-        valorInicial = estado.valorInicial;
-        odd = estado.odd;
-        calcularMeta();
-        atualizarTela();
-      }
-    }
-
-    async function buscarOdds() {
-      try {
-        const resposta = await fetch("http://localhost:3000/odds");
-        const dados = await resposta.json();
-        mostrarOdds(dados);
-      } catch (e) {
-        document.getElementById("odds").innerHTML = "Erro ao buscar odds.";
-      }
-    }
-
-    function mostrarOdds(jogos) {
-      const div = document.getElementById("odds");
-      div.innerHTML = jogos.map(j => `
-        <div class="p-2 border rounded">
-          <p><strong>${j.teams.join(" x ")}</strong></p>
-          <p>${j.bookmakers[0].markets[0].outcomes.map(o => `${o.name}: ${o.price}`).join(", ")}</p>
-        </div>
-      `).join('');
-    }
-
-    carregarEstado();
-    buscarOdds();
-    setInterval(buscarOdds, 60000); // atualiza a cada minuto
   </script>
 </body>
 </html>
