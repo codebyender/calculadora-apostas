@@ -50,6 +50,29 @@
     const elRodadas = document.getElementById("rodadas");
     const barra = document.getElementById("barraProgresso");
 
+    function salvarEstado() {
+      localStorage.setItem("valorInicial", valorInicial);
+      localStorage.setItem("valorAtual", valorAtual);
+      localStorage.setItem("odd", odd);
+      localStorage.setItem("rodadas", rodadas);
+    }
+
+    function carregarEstado() {
+      valorInicial = parseFloat(localStorage.getItem("valorInicial")) || 0;
+      valorAtual = parseFloat(localStorage.getItem("valorAtual")) || 0;
+      odd = parseFloat(localStorage.getItem("odd")) || 1.5;
+      rodadas = parseInt(localStorage.getItem("rodadas")) || 0;
+
+      if (valorInicial > 0) {
+        document.getElementById("valorInicial").value = valorInicial;
+      }
+      if (odd > 0) {
+        document.getElementById("oddFixa").value = odd;
+      }
+
+      atualizarTela();
+    }
+
     function acertou() {
       if (rodadas === 0) {
         valorInicial = parseFloat(document.getElementById("valorInicial").value) || 0;
@@ -59,20 +82,25 @@
       valorAtual *= odd;
       rodadas++;
       atualizarTela();
+      salvarEstado();
     }
 
     function errou() {
       rodadas = 0;
       valorAtual = 0;
       atualizarTela();
+      salvarEstado();
     }
 
     function resetar() {
       rodadas = 0;
       valorAtual = 0;
+      valorInicial = 0;
+      odd = 1.5;
       document.getElementById("valorInicial").value = "";
       document.getElementById("oddFixa").value = "";
       atualizarTela();
+      localStorage.clear();
     }
 
     function atualizarTela() {
@@ -81,6 +109,9 @@
       const progresso = Math.min((rodadas / metaRodadas) * 100, 100);
       barra.style.width = progresso + "%";
     }
+
+    // Carrega os dados salvos ao abrir a página
+    window.onload = carregarEstado;
   </script>
 </body>
 </html>
