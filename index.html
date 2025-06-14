@@ -2,116 +2,156 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculadora de Apostas</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-  <div class="bg-white shadow-xl rounded-2xl p-6 w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-4 text-center text-green-700">Calculadora de Aposta 30x</h1>
+  <div class="bg-white shadow-xl rounded-2xl p-6 w-full max-w-lg space-y-4">
+    <h1 class="text-2xl font-bold text-center text-green-700">Calculadora de Aposta 🎯</h1>
 
-    <div class="mb-4">
-      <label class="block text-sm font-medium">Valor Inicial (R$)</label>
-      <input id="valorInicial" type="number" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 26" />
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="block text-sm font-medium">Valor Inicial (R$)</label>
+        <input id="valorInicial" type="number" min="0.01" step="0.01" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 26" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Odd Atual</label>
+        <input id="oddFixa" type="number" min="1.01" step="0.01" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 1.5" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Meta de Valor (R$)</label>
+        <input id="metaValor" type="number" min="1" step="0.01" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 1000000" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Número de Rodadas</label>
+        <input id="metaRodadas" type="number" min="1" step="1" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 30" />
+      </div>
     </div>
 
-    <div class="mb-4">
-      <label class="block text-sm font-medium">Odd Fixa</label>
-      <input id="oddFixa" type="number" step="0.01" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 1.5" />
+    <div class="flex justify-between gap-2">
+      <button onclick="acertou()" id="btnAcertou" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">Acertou</button>
+      <button onclick="errou()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full">Errou</button>
+      <button onclick="resetar()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-full">Resetar</button>
     </div>
 
-    <div class="flex justify-between mb-4">
-      <button onclick="acertou()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Acertou</button>
-      <button onclick="errou()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Errou</button>
-      <button onclick="resetar()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Resetar</button>
-    </div>
-
-    <div class="mb-4">
-      <p><strong>Rodadas certas:</strong> <span id="rodadas">0</span> / 30</p>
+    <div>
+      <p><strong>Rodadas certas:</strong> <span id="rodadas">0</span> / <span id="totalRodadas">0</span></p>
       <p><strong>Valor atual:</strong> R$ <span id="valorAtual">0,00</span></p>
     </div>
 
-    <div class="mb-2">
-      <label class="block text-sm font-medium">Progresso até 30x:</label>
+    <div>
+      <label class="block text-sm font-medium">Progresso até a meta:</label>
       <div class="w-full bg-gray-300 h-4 rounded">
-        <div id="barraProgresso" class="h-4 bg-green-500 rounded" style="width: 0%"></div>
+        <div id="barraProgresso" class="h-4 bg-green-500 rounded transition-all duration-500" style="width: 0%"></div>
       </div>
+    </div>
+
+    <div>
+      <label class="block font-medium mb-2">Histórico das odds:</label>
+      <ul id="historicoOdds" class="list-disc list-inside max-h-40 overflow-auto text-sm text-gray-700"></ul>
     </div>
   </div>
 
   <script>
-    let valorInicial = 0;
-    let valorAtual = 0;
-    let odd = 1.5;
-    let rodadas = 0;
-    const metaRodadas = 30;
+    let valorInicial = 0, valorAtual = 0, rodadas = 0, rodadasMeta = 30, meta = 0, historicoOdds = [], metaAtingida = false;
 
     const elValorAtual = document.getElementById("valorAtual");
     const elRodadas = document.getElementById("rodadas");
+    const elTotalRodadas = document.getElementById("totalRodadas");
     const barra = document.getElementById("barraProgresso");
+    const elHistoricoOdds = document.getElementById("historicoOdds");
+    const btnAcertou = document.getElementById("btnAcertou");
 
-    function salvarEstado() {
-      localStorage.setItem("valorInicial", valorInicial);
-      localStorage.setItem("valorAtual", valorAtual);
-      localStorage.setItem("odd", odd);
-      localStorage.setItem("rodadas", rodadas);
-    }
-
-    function carregarEstado() {
-      valorInicial = parseFloat(localStorage.getItem("valorInicial")) || 0;
-      valorAtual = parseFloat(localStorage.getItem("valorAtual")) || 0;
-      odd = parseFloat(localStorage.getItem("odd")) || 1.5;
-      rodadas = parseInt(localStorage.getItem("rodadas")) || 0;
-
-      if (valorInicial > 0) {
-        document.getElementById("valorInicial").value = valorInicial;
-      }
-      if (odd > 0) {
-        document.getElementById("oddFixa").value = odd;
-      }
-
-      atualizarTela();
+    function formatarMoeda(valor) {
+      return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function acertou() {
+      if (metaAtingida) return;
+
+      const inputInicial = parseFloat(document.getElementById("valorInicial").value);
+      const inputOdd = parseFloat(document.getElementById("oddFixa").value);
+      const inputMeta = parseFloat(document.getElementById("metaValor").value);
+      const inputRodadas = parseInt(document.getElementById("metaRodadas").value);
+
       if (rodadas === 0) {
-        valorInicial = parseFloat(document.getElementById("valorInicial").value) || 0;
-        odd = parseFloat(document.getElementById("oddFixa").value) || 1.5;
+        if (!inputInicial || !inputMeta || !inputRodadas || inputInicial <= 0 || inputMeta <= 0 || inputRodadas <= 0) {
+          alert("Preencha corretamente todos os campos!");
+          return;
+        }
+        valorInicial = inputInicial;
         valorAtual = valorInicial;
+        meta = inputMeta;
+        rodadasMeta = inputRodadas;
+        elTotalRodadas.textContent = rodadasMeta;
       }
-      valorAtual *= odd;
+
+      if (!inputOdd || inputOdd < 1.01) {
+        alert("Odd inválida!");
+        return;
+      }
+
+      valorAtual *= inputOdd;
       rodadas++;
+      historicoOdds.push(inputOdd);
       atualizarTela();
-      salvarEstado();
+      atualizarHistorico();
+
+      if (valorAtual >= meta) {
+        metaAtingida = true;
+        confettiCelebration();
+        alert("🎉 Parabéns! Você atingiu a meta!");
+        btnAcertou.disabled = true;
+      }
     }
 
     function errou() {
-      rodadas = 0;
-      valorAtual = 0;
-      atualizarTela();
-      salvarEstado();
+      resetar();
     }
 
     function resetar() {
-      rodadas = 0;
-      valorAtual = 0;
       valorInicial = 0;
-      odd = 1.5;
+      valorAtual = 0;
+      rodadas = 0;
+      meta = 0;
+      rodadasMeta = 30;
+      metaAtingida = false;
+      historicoOdds = [];
       document.getElementById("valorInicial").value = "";
       document.getElementById("oddFixa").value = "";
+      document.getElementById("metaValor").value = "";
+      document.getElementById("metaRodadas").value = "";
+      btnAcertou.disabled = false;
       atualizarTela();
-      localStorage.clear();
+      atualizarHistorico();
     }
 
     function atualizarTela() {
-      elValorAtual.textContent = valorAtual.toFixed(2);
+      elValorAtual.textContent = formatarMoeda(valorAtual);
       elRodadas.textContent = rodadas;
-      const progresso = Math.min((rodadas / metaRodadas) * 100, 100);
+      const progresso = meta > 0 ? Math.min((valorAtual / meta) * 100, 100) : 0;
       barra.style.width = progresso + "%";
     }
 
-    // Carrega os dados salvos ao abrir a página
-    window.onload = carregarEstado;
+    function atualizarHistorico() {
+      elHistoricoOdds.innerHTML = "";
+      historicoOdds.forEach((odd, index) => {
+        const li = document.createElement("li");
+        li.textContent = `Rodada ${index + 1}: Odd ${odd.toFixed(2)}`;
+        elHistoricoOdds.appendChild(li);
+      });
+    }
+
+    function confettiCelebration() {
+      const duration = 3 * 1000;
+      const end = Date.now() + duration;
+      (function frame() {
+        confetti({ particleCount: 5, spread: 70, origin: { y: 0.6 } });
+        if (Date.now() < end) requestAnimationFrame(frame);
+      })();
+    }
   </script>
 </body>
 </html>
