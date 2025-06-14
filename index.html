@@ -2,156 +2,376 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora de Apostas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Apostas 30x</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    /* Estilo da lua minguante no topo esquerdo */
+    #toggleDarkMode {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      user-select: none;
+      z-index: 9999;
+    }
+    #toggleDarkMode svg {
+      fill: #fbbf24; /* amarelo para a lua */
+      filter: drop-shadow(0 0 1px rgba(0,0,0,0.3));
+    }
+    #toggleDarkMode:hover {
+      transform: rotate(20deg);
+    }
+
+    /* Ajuste corpo para transição suave cores */
+    body {
+      transition: background-color 0.5s, color 0.5s;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-  <div class="bg-white shadow-xl rounded-2xl p-6 w-full max-w-lg space-y-4">
-    <h1 class="text-2xl font-bold text-center text-green-700">Calculadora de Aposta 🎯</h1>
+<body class="bg-gray-100 text-gray-900 min-h-screen flex items-center justify-center p-4 transition-colors duration-500">
 
-    <div class="grid gap-4 sm:grid-cols-2">
-      <div>
-        <label class="block text-sm font-medium">Valor Inicial (R$)</label>
-        <input id="valorInicial" type="number" min="0.01" step="0.01" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 26" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Odd Atual</label>
-        <input id="oddFixa" type="number" min="1.01" step="0.01" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 1.5" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Meta de Valor (R$)</label>
-        <input id="metaValor" type="number" min="1" step="0.01" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 1000000" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Número de Rodadas</label>
-        <input id="metaRodadas" type="number" min="1" step="1" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 30" />
-      </div>
+  <!-- Botão da Lua Minguante -->
+  <div id="toggleDarkMode" title="Alternar modo claro/escuro" aria-label="Alternar modo claro/escuro" role="button" tabindex="0">
+    <!-- SVG da lua minguante -->
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 12.79A9 9 0 0112.21 3a7 7 0 108.79 9.79z"/>
+    </svg>
+  </div>
+
+  <div class="bg-white shadow-xl rounded-2xl p-6 w-full max-w-xl transition-colors duration-500">
+    <h1 class="text-2xl font-bold mb-4 text-center text-green-700">Calculadora de Aposta 30x</h1>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium">Valor Inicial (R$)</label>
+      <input id="valorInicial" type="number" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 100" />
     </div>
 
-    <div class="flex justify-between gap-2">
-      <button onclick="acertou()" id="btnAcertou" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">Acertou</button>
-      <button onclick="errou()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full">Errou</button>
-      <button onclick="resetar()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-full">Resetar</button>
+    <div class="mb-4">
+      <label class="block text-sm font-medium">Odd Fixa</label>
+      <input id="oddFixa" type="number" step="0.01" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 1.5" />
     </div>
 
-    <div>
-      <p><strong>Rodadas certas:</strong> <span id="rodadas">0</span> / <span id="totalRodadas">0</span></p>
+    <div class="mb-4">
+      <label class="block text-sm font-medium">Meta Final (R$)</label>
+      <input id="metaFinal" type="number" step="0.01" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 3000" />
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium">Rodadas para simular</label>
+      <input id="quantidadeSimulacoes" type="number" class="mt-1 w-full p-2 border rounded" placeholder="Ex: 30" />
+      <button onclick="simularRodadas()" class="bg-blue-600 mt-2 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Simular Rodadas</button>
+    </div>
+
+    <div class="flex flex-wrap gap-2 justify-between mb-4">
+      <button onclick="acertou()" id="btnAcertou" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full sm:w-auto">Acertou</button>
+      <button onclick="errou()" id="btnErrou" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full sm:w-auto">Errou</button>
+      <button onclick="resetar()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-full sm:w-auto">Resetar</button>
+      <button onclick="exportarCSV()" class="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 w-full sm:w-auto">Exportar CSV</button>
+    </div>
+
+    <div class="mb-4">
+      <p><strong>Rodadas certas:</strong> <span id="rodadas">0</span></p>
       <p><strong>Valor atual:</strong> R$ <span id="valorAtual">0,00</span></p>
     </div>
 
-    <div>
-      <label class="block text-sm font-medium">Progresso até a meta:</label>
-      <div class="w-full bg-gray-300 h-4 rounded">
-        <div id="barraProgresso" class="h-4 bg-green-500 rounded transition-all duration-500" style="width: 0%"></div>
-      </div>
+    <div class="mb-4">
+      <canvas id="grafico" height="100"></canvas>
     </div>
 
-    <div>
-      <label class="block font-medium mb-2">Histórico das odds:</label>
-      <ul id="historicoOdds" class="list-disc list-inside max-h-40 overflow-auto text-sm text-gray-700"></ul>
+    <div class="mb-2">
+      <label class="block text-sm font-medium">Progresso até 30x:</label>
+      <div class="w-full bg-gray-300 h-4 rounded">
+        <div id="barraProgresso" class="h-4 bg-green-500 rounded" style="width: 0%"></div>
+      </div>
     </div>
   </div>
 
-  <script>
-    let valorInicial = 0, valorAtual = 0, rodadas = 0, rodadasMeta = 30, meta = 0, historicoOdds = [], metaAtingida = false;
+<!-- SCRIPT ABAIXO (inclui modo escuro, toggle, modo inteligente, confetes, formatação etc.) -->
+<script>
+  let valorInicial = 0;
+  let valorAtual = 0;
+  let odd = 1.5;
+  let meta = 0;
+  let rodadas = 0;
+  let historico = [];
+  let metaRodadas = 30;
+  let metaBatida = false;
 
-    const elValorAtual = document.getElementById("valorAtual");
-    const elRodadas = document.getElementById("rodadas");
-    const elTotalRodadas = document.getElementById("totalRodadas");
-    const barra = document.getElementById("barraProgresso");
-    const elHistoricoOdds = document.getElementById("historicoOdds");
-    const btnAcertou = document.getElementById("btnAcertou");
+  const elValorAtual = document.getElementById("valorAtual");
+  const elRodadas = document.getElementById("rodadas");
+  const barra = document.getElementById("barraProgresso");
+  const graficoCanvas = document.getElementById("grafico");
+  const toggleDarkModeBtn = document.getElementById("toggleDarkMode");
+  const container = document.querySelector("div.bg-white");
 
-    function formatarMoeda(valor) {
-      return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Inicializa gráfico Chart.js
+  const chart = new Chart(graficoCanvas, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Valor Atual (R$)',
+        data: [],
+        borderColor: 'green',
+        fill: false
+      }]
+    },
+    options: { responsive: true }
+  });
+
+  function formatar(valor) {
+    return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function salvarEstado() {
+    localStorage.setItem("valorInicial", valorInicial);
+    localStorage.setItem("valorAtual", valorAtual);
+    localStorage.setItem("odd", odd);
+    localStorage.setItem("rodadas", rodadas);
+    localStorage.setItem("meta", meta);
+    localStorage.setItem("historico", JSON.stringify(historico));
+    localStorage.setItem("modoEscuro", document.body.classList.contains("dark") ? "1" : "0");
+  }
+
+  function carregarEstado() {
+    valorInicial = parseFloat(localStorage.getItem("valorInicial")) || 0;
+    valorAtual = parseFloat(localStorage.getItem("valorAtual")) || 0;
+    odd = parseFloat(localStorage.getItem("odd")) || 1.5;
+    rodadas = parseInt(localStorage.getItem("rodadas")) || 0;
+    meta = parseFloat(localStorage.getItem("meta")) || 0;
+    historico = JSON.parse(localStorage.getItem("historico") || "[]");
+
+    document.getElementById("valorInicial").value = valorInicial || "";
+    document.getElementById("oddFixa").value = odd || "";
+    document.getElementById("metaFinal").value = meta || "";
+
+    atualizarGrafico();
+    atualizarTela();
+
+    // Carregar modo escuro do localStorage ou sistema
+    const modoEscuroLS = localStorage.getItem("modoEscuro");
+    if (modoEscuroLS === "1") {
+      ativarModoEscuro();
+    } else if (modoEscuroLS === "0") {
+      desativarModoEscuro();
+    } else {
+      // Sem preferência salva, usa sistema
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        ativarModoEscuro();
+      } else {
+        desativarModoEscuro();
+      }
     }
+  }
 
-    function acertou() {
-      if (metaAtingida) return;
+  function atualizarGrafico() {
+    chart.data.labels = historico.map((_, i) => `R${i+1}`);
+    chart.data.datasets[0].data = historico;
+    chart.update();
+  }
 
-      const inputInicial = parseFloat(document.getElementById("valorInicial").value);
-      const inputOdd = parseFloat(document.getElementById("oddFixa").value);
-      const inputMeta = parseFloat(document.getElementById("metaValor").value);
-      const inputRodadas = parseInt(document.getElementById("metaRodadas").value);
+  function confetes() {
+    confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+  }
+
+  function bloquear() {
+    metaBatida = true;
+    document.getElementById("btnAcertou").disabled = true;
+    document.getElementById("btnErrou").disabled = true;
+  }
+
+  function acertou() {
+    if (metaBatida) return; // bloqueado após meta batida
+    if (rodadas === 0) {
+      valorInicial = parseFloat(document.getElementById("valorInicial").value) || 0;
+      odd = parseFloat(document.getElementById("oddFixa").value) || 1.5;
+      meta = parseFloat(document.getElementById("metaFinal").value) || 0;
+      valorAtual = valorInicial;
+    }
+    valorAtual *= odd;
+    rodadas++;
+    historico.push(parseFloat(valorAtual.toFixed(2)));
+    if (meta > 0 && valorAtual >= meta) {
+      confetes();
+      bloquear();
+    }
+    atualizarGrafico();
+    atualizarTela();
+    salvarEstado();
+  }
+
+  function errou() {
+    if (metaBatida) return; // bloqueado após meta batida
+    rodadas = 0;
+    valorAtual = 0;
+    historico = [];
+    atualizarGrafico();
+    atualizarTela();
+    salvarEstado();
+  }
+
+  function resetar() {
+    rodadas = 0;
+    valorAtual = 0;
+    valorInicial = 0;
+    odd = 1.5;
+    meta = 0;
+    historico = [];
+    metaBatida = false;
+    document.getElementById("valorInicial").value = "";
+    document.getElementById("oddFixa").value = "";
+    document.getElementById("metaFinal").value = "";
+    document.getElementById("quantidadeSimulacoes").value = "";
+    document.getElementById("btnAcertou").disabled = false;
+    document.getElementById("btnErrou").disabled = false;
+    atualizarGrafico();
+    atualizarTela();
+    localStorage.clear();
+    // Resetar modo escuro para padrão sistema
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      ativarModoEscuro();
+    } else {
+      desativarModoEscuro();
+    }
+  }
+
+  function atualizarTela() {
+    elValorAtual.textContent = formatar(valorAtual);
+    elRodadas.textContent = rodadas;
+    const progresso = Math.min((rodadas / metaRodadas) * 100, 100);
+    barra.style.width = progresso + "%";
+  }
+
+  function gerarOddAleatoria() {
+    return (Math.random() * (1.55 - 1.45) + 1.45).toFixed(2);
+  }
+
+  function simularRodadas() {
+    const rodadasASimular = parseInt(document.getElementById("quantidadeSimulacoes").value) || 10;
+    let rodadaAtual = 0;
+
+    if (metaBatida) return;
+
+    function simularProxima() {
+      if (rodadaAtual >= rodadasASimular || metaBatida) return;
+
+      let acertouRodada = Math.random() < 0.8;
+      odd = parseFloat(gerarOddAleatoria());
+      document.getElementById("oddFixa").value = odd;
 
       if (rodadas === 0) {
-        if (!inputInicial || !inputMeta || !inputRodadas || inputInicial <= 0 || inputMeta <= 0 || inputRodadas <= 0) {
-          alert("Preencha corretamente todos os campos!");
-          return;
-        }
-        valorInicial = inputInicial;
+        valorInicial = parseFloat(document.getElementById("valorInicial").value) || 0;
         valorAtual = valorInicial;
-        meta = inputMeta;
-        rodadasMeta = inputRodadas;
-        elTotalRodadas.textContent = rodadasMeta;
       }
 
-      if (!inputOdd || inputOdd < 1.01) {
-        alert("Odd inválida!");
-        return;
+      if (acertouRodada) {
+        valorAtual *= odd;
+        rodadas++;
+        historico.push(parseFloat(valorAtual.toFixed(2)));
+      } else {
+        rodadas = 0;
+        valorAtual = 0;
+        historico = [];
       }
 
-      valorAtual *= inputOdd;
-      rodadas++;
-      historicoOdds.push(inputOdd);
+      if (meta > 0 && valorAtual >= meta) {
+        confetes();
+        bloquear();
+      }
+
+      atualizarGrafico();
       atualizarTela();
-      atualizarHistorico();
+      salvarEstado();
 
-      if (valorAtual >= meta) {
-        metaAtingida = true;
-        confettiCelebration();
-        alert("🎉 Parabéns! Você atingiu a meta!");
-        btnAcertou.disabled = true;
-      }
+      rodadaAtual++;
+      setTimeout(simularProxima, 500);
     }
 
-    function errou() {
-      resetar();
-    }
+    simularProxima();
+  }
 
-    function resetar() {
-      valorInicial = 0;
-      valorAtual = 0;
-      rodadas = 0;
-      meta = 0;
-      rodadasMeta = 30;
-      metaAtingida = false;
-      historicoOdds = [];
-      document.getElementById("valorInicial").value = "";
-      document.getElementById("oddFixa").value = "";
-      document.getElementById("metaValor").value = "";
-      document.getElementById("metaRodadas").value = "";
-      btnAcertou.disabled = false;
-      atualizarTela();
-      atualizarHistorico();
-    }
+  function exportarCSV() {
+    let csv = "Rodada,Valor (R$)\n";
+    historico.forEach((v, i) => {
+      csv += `${i + 1},${formatar(v)}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "historico_apostas.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
-    function atualizarTela() {
-      elValorAtual.textContent = formatarMoeda(valorAtual);
-      elRodadas.textContent = rodadas;
-      const progresso = meta > 0 ? Math.min((valorAtual / meta) * 100, 100) : 0;
-      barra.style.width = progresso + "%";
-    }
+  // Funções para alternar modo escuro/claro
+  function ativarModoEscuro() {
+    document.body.classList.add("dark");
+    document.body.classList.remove("bg-gray-100", "text-gray-900");
+    document.body.classList.add("bg-gray-900", "text-white");
+    container.classList.remove("bg-white");
+    container.classList.add("bg-gray-800");
+    // Ajustar cores dos botões para modo escuro
+    ajustarBotoesModoEscuro(true);
+    salvarEstado();
+  }
 
-    function atualizarHistorico() {
-      elHistoricoOdds.innerHTML = "";
-      historicoOdds.forEach((odd, index) => {
-        const li = document.createElement("li");
-        li.textContent = `Rodada ${index + 1}: Odd ${odd.toFixed(2)}`;
-        elHistoricoOdds.appendChild(li);
-      });
-    }
+  function desativarModoEscuro() {
+    document.body.classList.remove("dark", "bg-gray-900", "text-white");
+    document.body.classList.add("bg-gray-100", "text-gray-900");
+    container.classList.remove("bg-gray-800");
+    container.classList.add("bg-white");
+    ajustarBotoesModoEscuro(false);
+    salvarEstado();
+  }
 
-    function confettiCelebration() {
-      const duration = 3 * 1000;
-      const end = Date.now() + duration;
-      (function frame() {
-        confetti({ particleCount: 5, spread: 70, origin: { y: 0.6 } });
-        if (Date.now() < end) requestAnimationFrame(frame);
-      })();
+  // Ajusta cores dos botões para o modo escuro/claro
+  function ajustarBotoesModoEscuro(isDark) {
+    const btnAcertou = document.getElementById("btnAcertou");
+    const btnErrou = document.getElementById("btnErrou");
+    const btnResetar = document.querySelector("button[onclick='resetar()']");
+    const btnExportar = document.querySelector("button[onclick='exportarCSV()']");
+    const btnSimular = document.querySelector("button[onclick='simularRodadas()']");
+
+    if (isDark) {
+      btnAcertou.classList.replace("bg-green-600", "bg-green-500");
+      btnErrou.classList.replace("bg-red-600", "bg-red-500");
+      btnResetar.classList.replace("bg-gray-500", "bg-gray-600");
+      btnExportar.classList.replace("bg-yellow-600", "bg-yellow-500");
+      btnSimular.classList.replace("bg-blue-600", "bg-blue-500");
+    } else {
+      btnAcertou.classList.replace("bg-green-500", "bg-green-600");
+      btnErrou.classList.replace("bg-red-500", "bg-red-600");
+      btnResetar.classList.replace("bg-gray-600", "bg-gray-500");
+      btnExportar.classList.replace("bg-yellow-500", "bg-yellow-600");
+      btnSimular.classList.replace("bg-blue-500", "bg-blue-600");
     }
-  </script>
+  }
+
+  // Evento para o clique na lua para alternar modo
+  toggleDarkModeBtn.addEventListener("click", () => {
+    if (document.body.classList.contains("dark")) {
+      desativarModoEscuro();
+    } else {
+      ativarModoEscuro();
+    }
+  });
+
+  // Também permite alternar com a tecla Enter para acessibilidade
+  toggleDarkModeBtn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleDarkModeBtn.click();
+    }
+  });
+
+  window.onload = carregarEstado;
+</script>
 </body>
 </html>
